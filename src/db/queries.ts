@@ -35,9 +35,9 @@ export async function insertFindings(db: D1Database, scanId: string, findings: F
   for (const f of findings) {
     await db
       .prepare(
-        "INSERT INTO findings (id, scan_id, rule_id, cwe, severity, confidence, evidence, verdict, message, file, start_line, end_line) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+        "INSERT INTO findings (id, scan_id, rule_id, cwe, severity, confidence, evidence, verdict, message, file, start_line, end_line, snippet, explanation, remediation) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
       )
-      .bind(f.id, scanId, f.ruleId, f.cwe, f.severity, f.confidence ?? null, f.evidence ?? null, f.verdict ?? null, f.message, f.file, f.startLine, f.endLine)
+      .bind(f.id, scanId, f.ruleId, f.cwe, f.severity, f.confidence ?? null, f.evidence ?? null, f.verdict ?? null, f.message, f.file, f.startLine, f.endLine, f.snippet, f.explanation ?? null, f.remediation ?? null)
       .run();
   }
 }
@@ -46,8 +46,9 @@ export async function getFindings(db: D1Database, scanId: string): Promise<Findi
   const { results } = await db.prepare("SELECT * FROM findings WHERE scan_id = ?").bind(scanId).all();
   return results.map((r: any) => ({
     id: r.id, ruleId: r.rule_id, cwe: r.cwe, severity: r.severity, message: r.message,
-    file: r.file, startLine: r.start_line, endLine: r.end_line, snippet: "",
+    file: r.file, startLine: r.start_line, endLine: r.end_line, snippet: r.snippet ?? "",
     verdict: r.verdict ?? undefined, confidence: r.confidence ?? undefined, evidence: r.evidence ?? undefined,
+    explanation: r.explanation ?? undefined, remediation: r.remediation ?? undefined,
   }));
 }
 

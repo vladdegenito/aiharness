@@ -25,6 +25,9 @@ CREATE TABLE findings (
   file TEXT NOT NULL,
   start_line INTEGER NOT NULL,
   end_line INTEGER NOT NULL,
+  snippet TEXT,
+  explanation TEXT,
+  remediation TEXT,
   FOREIGN KEY (scan_id) REFERENCES scans(id)
 );
 
