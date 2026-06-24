@@ -95,13 +95,33 @@ export class ScanRunner extends DurableObject<Env> {
 
       const findings = await this.scanToFindings(language, files);
 
+      // Build code context from the ACTUAL source, not Semgrep's `lines` field —
+      // community (unauthenticated) Semgrep redacts matched lines to "requires login".
+      const fileMap = new Map<string, string>(
+        (files as { path: string; content: string }[]).map((x) => [x.path, x.content]),
+      );
+      const sliceLines = (file: string, from: number, to: number): string => {
+        const content = fileMap.get(file);
+        if (!content) return "";
+        const lines = content.split("\n");
+        return lines.slice(Math.max(0, from - 1), Math.min(lines.length, to)).join("\n");
+      };
+      for (const f of findings) {
+        const real = sliceLines(f.file, f.startLine, f.endLine);
+        if (real) f.snippet = real;                        // replace redacted snippet
+      }
+      const getWindow = (f: Finding): string => {
+        const win = sliceLines(f.file, f.startLine - 5, f.endLine + 5);
+        return win || f.snippet || "";                     // ±5 lines of real context
+      };
+
       await setScanStatus(env.DB, scanId, "triaging");
       // Fix 2: guard missing job key before decrypting
       const envelope = await getJobKey(env.DB, scanId);
       if (!envelope) throw new Error("job key not found for scan " + scanId);
       const apiKey = await decryptKey(env.KEK, envelope);
       const adapter = this.makeAdapter(apiKey);
-      const triaged = await triageFindings(findings, adapter, (f) => f.snippet);
+      const triaged = await triageFindings(findings, adapter, getWindow);
 
       await insertFindings(env.DB, scanId, triaged);
       const sarif = buildSarif(triaged, { toolVersion: "0.0.1" });
