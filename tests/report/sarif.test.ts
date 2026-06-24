@@ -23,5 +23,7 @@ describe("buildSarif", () => {
     expect(run.results[0].properties.confidence).toBe("high");
     expect(run.taxonomies[0].name).toBe("CWE");
     expect(run.taxonomies[0].taxa.some((t: any) => t.id === "CWE-78")).toBe(true);
+    expect(run.results[0].partialFingerprints.primaryLocationLineHash).toBe("app.py:12:python.command-injection");
+    expect(run.results[0].taxa[0].id).toBe("CWE-78");
   });
 });

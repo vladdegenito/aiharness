@@ -33,11 +33,29 @@ async function poll(id) {
   }
 }
 
+const CONF = ["low", "medium", "high"];
+
 function render(findings) {
-  $("findings").innerHTML = findings.map((f) => `
-    <div class="finding ${f.confidence}">
-      <strong>${f.cwe ?? "—"}</strong> · ${f.severity} · confidence: ${f.confidence ?? "—"}
-      <div>${f.file}:${f.startLine} — ${f.explanation ?? f.message}</div>
-      <em>${f.remediation ?? ""}</em>
-    </div>`).join("");
+  const c = $("findings");
+  c.replaceChildren();
+  for (const f of findings) {
+    const div = document.createElement("div");
+    div.className = "finding" + (CONF.includes(f.confidence) ? " " + f.confidence : "");
+
+    const strong = document.createElement("strong");
+    strong.textContent = f.cwe ?? "—";
+    div.appendChild(strong);
+
+    div.appendChild(document.createTextNode(" · " + (f.severity ?? "") + " · confidence: " + (f.confidence ?? "—")));
+
+    const detail = document.createElement("div");
+    detail.textContent = (f.file ?? "") + ":" + (f.startLine ?? "") + " — " + (f.explanation ?? f.message ?? "");
+    div.appendChild(detail);
+
+    const em = document.createElement("em");
+    em.textContent = f.remediation ?? "";
+    div.appendChild(em);
+
+    c.appendChild(div);
+  }
 }

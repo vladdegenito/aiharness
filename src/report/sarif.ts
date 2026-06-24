@@ -43,7 +43,7 @@ export function buildSarif(findings: Finding[], meta: { toolVersion: string }): 
             },
           ],
           partialFingerprints: { primaryLocationLineHash: `${f.file}:${f.startLine}:${f.ruleId}` },
-          taxa: f.cwe ? [{ toolComponent: { name: "CWE" }, id: f.cwe }] : [],
+          taxa: f.cwe ? [{ toolComponent: { guid: "25F72D7E-8A92-459D-AD67-64853F788765", name: "CWE" }, id: f.cwe }] : [],
           properties: {
             confidence: f.confidence,
             verdict: f.verdict,
