@@ -1023,7 +1023,7 @@ describe("ScanRunner state machine", () => {
     await runInDurableObject(stub, async (instance: any) => {
       // inject a fake container scan so we don't boot a real container in tests
       instance.scanFn = async () => semgrep;
-      const findings = await instance.scanToFindings(["app.py loaded"], "python");
+      const findings = await instance.scanToFindings("python", []);
       expect(findings).toHaveLength(1);
       expect(findings[0].cwe).toBe("CWE-78");
     });
@@ -1048,7 +1048,7 @@ export class ScanRunner extends Container<Env> {
   defaultPort = 8080;
   sleepAfter = "2m";
 
-  // overridable in tests
+  // overridable in tests — container scan call
   scanFn = async (files: { path: string; content: string }[], language: string): Promise<unknown> => {
     const res = await this.containerFetch(
       new Request("http://container/scan", {
@@ -1060,7 +1060,7 @@ export class ScanRunner extends Container<Env> {
     return res.json();
   };
 
-  async scanToFindings(_loaded: string[], language: string, files: { path: string; content: string }[] = []): Promise<Finding[]> {
+  async scanToFindings(language: string, files: { path: string; content: string }[]): Promise<Finding[]> {
     const raw = await this.scanFn(files, language);
     return normalizeSemgrep(raw);
   }
@@ -1643,15 +1643,24 @@ export default {
 };
 ```
 
-- [ ] **Step 3: Implement `runScan` in `src/scan-runner/runner.ts`**
+- [ ] **Step 3: Add an injectable adapter factory + implement `runScan` in `src/scan-runner/runner.ts`**
 
-Replace the placeholder `runScan` with:
+First add this field to the `ScanRunner` class body (just below `scanFn`), so the integration test can inject a fake model without a real network call. It is declared here (not in Task 8) because `ClaudeAdapter` does not exist until Task 9:
+
+```ts
+import type { ModelAdapter } from "../adapters/model-adapter";
+import { ClaudeAdapter } from "../adapters/claude";
+
+  // overridable in tests — model adapter factory
+  makeAdapter: (apiKey: string) => ModelAdapter = (apiKey) => new ClaudeAdapter(apiKey);
+```
+
+Then replace the placeholder `runScan` with:
 
 ```ts
 async runScan(scanId: string): Promise<void> {
   const { getScan, setScanStatus, setScanSarifKey, insertFindings, getJobKey, deleteJobKey } = await import("../db/queries");
   const { decryptKey } = await import("../crypto/envelope");
-  const { ClaudeAdapter } = await import("../adapters/claude");
   const { triageFindings } = await import("../triage/engine");
   const { buildSarif } = await import("../report/sarif");
   const { recordAudit, hashPrompt } = await import("../report/audit");
@@ -1666,12 +1675,12 @@ async runScan(scanId: string): Promise<void> {
     const obj = await env.SOURCE.get(scan.sourceKey);
     const { language, files } = JSON.parse(await obj!.text());
 
-    const findings = await this.scanToFindings([], language, files);
+    const findings = await this.scanToFindings(language, files);
 
     await setScanStatus(env.DB, scanId, "triaging");
     const envelope = await getJobKey(env.DB, scanId);
     const apiKey = await decryptKey(env.KEK, envelope!);
-    const adapter = new ClaudeAdapter(apiKey);
+    const adapter = this.makeAdapter(apiKey);
     const triaged = await triageFindings(findings, adapter, (f) => f.snippet);
 
     await insertFindings(env.DB, scanId, triaged);
@@ -1698,14 +1707,20 @@ async runScan(scanId: string): Promise<void> {
 
 ```ts
 import { env, runInDurableObject, applyD1Migrations } from "cloudflare:test";
-import { beforeAll, describe, it, expect, vi } from "vitest";
+import { beforeAll, describe, it, expect } from "vitest";
 import semgrep from "../../fixtures/semgrep-output.json";
-import fixture from "../../fixtures/claude-response.json";
+import type { ModelAdapter } from "../../src/adapters/model-adapter";
 
 beforeAll(async () => {
   // @ts-expect-error test migrations
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
 });
+
+const fakeAdapter: ModelAdapter = {
+  id: "fake",
+  capabilities: { maxContextTokens: 1000, supportsStructuredOutput: true, supportsSeed: false },
+  analyze: async () => ({ verdict: "confirmed", severity: "high", explanation: "ok", remediation: "fix it" }),
+};
 
 describe("end-to-end pipeline (mocked container + model)", () => {
   it("scans, triages, persists findings, deletes the key, writes SARIF", async () => {
@@ -1719,9 +1734,8 @@ describe("end-to-end pipeline (mocked container + model)", () => {
 
     const stub = env.SCAN_RUNNER.get(env.SCAN_RUNNER.idFromName(id));
     await runInDurableObject(stub, async (instance: any) => {
-      instance.scanFn = async () => semgrep;                         // fake container
-      // fake the model network call by monkeypatching ClaudeAdapter via global
-      vi.stubGlobal("__FAKE_MODEL__", async () => fixture.valid);
+      instance.scanFn = async () => semgrep;          // fake container
+      instance.makeAdapter = () => fakeAdapter;       // fake model, no network
       await instance.runScan(id);
     });
 
@@ -1733,18 +1747,6 @@ describe("end-to-end pipeline (mocked container + model)", () => {
   });
 });
 ```
-
-> To make the model call test-injectable without network, have `ClaudeAdapter`'s default `callModel` check for `globalThis.__FAKE_MODEL__` first:
-> in `src/adapters/claude.ts`, the default `callModel` becomes:
-> ```ts
-> (async (system, user) => {
->   const fake = (globalThis as any).__FAKE_MODEL__;
->   if (typeof fake === "function") return fake(system, user);
->   const client = new Anthropic({ apiKey });
->   /* ...unchanged... */
-> })
-> ```
-> Apply that one-line guard now.
 
 - [ ] **Step 5: Run the integration test to verify it fails, then passes**
 
