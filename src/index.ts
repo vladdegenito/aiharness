@@ -24,7 +24,13 @@ export default {
   async queue(batch: MessageBatch<{ scanId: string }>, env: Env): Promise<void> {
     for (const msg of batch.messages) {
       const stub = env.SCAN_RUNNER.get(env.SCAN_RUNNER.idFromName(msg.body.scanId));
-      await stub.runScan(msg.body.scanId);
+      // Fix 4: always ack so a poison message does not retry forever;
+      // runScan itself records "failed" status in the finally block.
+      try {
+        await stub.runScan(msg.body.scanId);
+      } catch (err) {
+        console.error("scan failed", msg.body.scanId, err);
+      }
       msg.ack();
     }
   },

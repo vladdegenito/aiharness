@@ -54,19 +54,26 @@ export class ScanRunner extends DurableObject<Env> {
     const { SYSTEM_PROMPT } = await import("../adapters/model-adapter");
 
     const env = this.env;
+    let succeeded = false;
     try {
       const scan = await getScan(env.DB, scanId);
       if (!scan) throw new Error("scan not found");
+      // Fix 3: idempotency guard — skip re-running a finished scan (handles queue retries)
+      if (scan.status === "completed" || scan.status === "failed") return;
       await setScanStatus(env.DB, scanId, "scanning");
 
+      // Fix 2: guard missing R2 object before parsing
       const obj = await env.SOURCE.get(scan.sourceKey);
-      const { language, files } = JSON.parse(await obj!.text());
+      if (!obj) throw new Error(`source object not found: ${scan.sourceKey}`);
+      const { language, files } = JSON.parse(await obj.text());
 
       const findings = await this.scanToFindings(language, files);
 
       await setScanStatus(env.DB, scanId, "triaging");
+      // Fix 2: guard missing job key before decrypting
       const envelope = await getJobKey(env.DB, scanId);
-      const apiKey = await decryptKey(env.KEK, envelope!);
+      if (!envelope) throw new Error("job key not found for scan " + scanId);
+      const apiKey = await decryptKey(env.KEK, envelope);
       const adapter = this.makeAdapter(apiKey);
       const triaged = await triageFindings(findings, adapter, (f) => f.snippet);
 
@@ -80,9 +87,15 @@ export class ScanRunner extends DurableObject<Env> {
         modelId: "claude", modelVersion: scan.modelVersion,
         promptHash: await hashPrompt(SYSTEM_PROMPT), rulesetVersion: "p/default",
       });
+      succeeded = true;
+    } catch (err) {
+      // Error is recorded via succeeded=false; do not re-throw so the finally
+      // cleanup always runs and callers (queue handler) see a resolved promise.
+      console.error("runScan error for", scanId, err);
     } finally {
-      await deleteJobKey(env.DB, scanId);                 // always shred the key
-      await setScanStatus(env.DB, scanId, "completed");
+      await deleteJobKey(env.DB, scanId);                 // always shred the key first
+      // Fix 1: set "failed" when an error occurred, "completed" on success
+      await setScanStatus(env.DB, scanId, succeeded ? "completed" : "failed");
       await env.SOURCE.delete(`source/${scanId}.json`).catch(() => {});  // TTL: drop source
     }
   }

@@ -10,7 +10,7 @@ export const api = new Hono<{ Bindings: Env }>();
 api.post("/scans", async (c) => {
   const body = await c.req.json().catch(() => null);
   const v = validateScanRequest(body);
-  if (!v.ok) return c.json({ error: v.message }, v.status as 400);
+  if (!v.ok) return c.json({ error: v.message }, v.status as 400 | 413);
 
   const id = crypto.randomUUID();
   const sourceKey = `source/${id}.json`;

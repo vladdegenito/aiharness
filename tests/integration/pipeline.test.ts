@@ -2,6 +2,7 @@ import { env, runInDurableObject, applyD1Migrations } from "cloudflare:test";
 import { beforeAll, describe, it, expect } from "vitest";
 import semgrep from "../../fixtures/semgrep-output.json";
 import type { ModelAdapter } from "../../src/adapters/model-adapter";
+import { getScan } from "../../src/db/queries";
 
 beforeAll(async () => {
   // @ts-expect-error test migrations
@@ -36,5 +37,27 @@ describe("end-to-end pipeline (mocked container + model)", () => {
     expect(await getJobKey(env.DB, id)).toBeNull();                  // key shredded
     const sarif = await env.SOURCE.get(`sarif/${id}.json`);
     expect(sarif).not.toBeNull();
+  });
+
+  it("marks scan as 'failed' and shreds the job key when scanFn throws", async () => {
+    const { createScan, storeJobKey, getJobKey } = await import("../../src/db/queries");
+    const { encryptKey } = await import("../../src/crypto/envelope");
+
+    const id = "int-fail-1";
+    await env.SOURCE.put(`source/${id}.json`, JSON.stringify({ language: "python", files: [{ path: "app.py", content: "x = 1" }] }));
+    await createScan(env.DB, { id, language: "python", status: "queued", sourceKey: `source/${id}.json`, modelId: "claude", modelVersion: "claude-opus-4-8" });
+    await storeJobKey(env.DB, id, await encryptKey(env.KEK, "sk-ant-test"));
+
+    const stub = env.SCAN_RUNNER.get(env.SCAN_RUNNER.idFromName(id));
+    await runInDurableObject(stub, async (instance: any) => {
+      instance.scanFn = async () => { throw new Error("container down"); };
+      instance.makeAdapter = () => fakeAdapter;
+      // runScan must NOT throw — finally handles status & key cleanup
+      await instance.runScan(id);
+    });
+
+    const scan = await getScan(env.DB, id);
+    expect(scan?.status).toBe("failed");                 // Fix 1: status must be "failed"
+    expect(await getJobKey(env.DB, id)).toBeNull();      // key must still be shredded
   });
 });

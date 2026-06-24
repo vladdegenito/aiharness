@@ -9,6 +9,11 @@ export default defineWorkersConfig(async () => {
         workers: {
           wrangler: { configPath: "./wrangler.jsonc" },
           miniflare: { bindings: { TEST_MIGRATIONS: migrations } },
+          // WORKAROUND: isolatedStorage and multi-worker mode trigger a miniflare
+          // sqlite-shm frame-pop assertion when R2 is accessed inside
+          // runInDurableObject. Consequence: D1 and R2 state is SHARED across all
+          // test files in this suite. EACH TEST MUST USE UNIQUE ROW IDs — do not
+          // reuse scan ids across tests, or tests will corrupt each other's state.
           isolatedStorage: false,
           singleWorker: true,
         },
