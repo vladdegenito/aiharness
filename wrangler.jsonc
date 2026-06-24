@@ -18,8 +18,11 @@
   "durable_objects": {
     "bindings": [{ "name": "SCAN_RUNNER", "class_name": "ScanRunner" }]
   },
+  // NOTE (Task 8/14): `image` is a placeholder so the vitest config-reader (which rejects
+  // bare ./Dockerfile paths) can parse this file. Restore "./container/Dockerfile" for the
+  // real build, or split a test-only wrangler config that omits the containers block.
   "containers": [
-    { "class_name": "ScanRunner", "image": "docker.io/cloudflare/scanrunner:latest", "max_instances": 5, "instance_type": "standard" }
+    { "class_name": "ScanRunner", "image": "registry.example.com/aiharness-scanner:task8-placeholder", "max_instances": 5, "instance_type": "standard" }
   ],
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["ScanRunner"] }
