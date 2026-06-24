@@ -6,3 +6,8 @@ dist/
 *.log
 .claude/
 .superpowers/
+/*.jpeg
+/*.jpg
+/*.png
+.playwright-mcp/
+docs/site/
