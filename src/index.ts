@@ -12,6 +12,8 @@ export interface Env {
   SCAN_RUNNER: DurableObjectNamespace<ScanRunner>;
   ASSETS: Fetcher;
   KEK: string;
+  // Server-side demo key used when a scan request omits apiKey (BYO key optional).
+  DEMO_ANTHROPIC_KEY?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();

@@ -23,8 +23,13 @@ describe("validateScanRequest", () => {
     if (!r.ok) expect(r.status).toBe(413);
   });
 
-  it("rejects a missing api key", () => {
-    const r = validateScanRequest({ language: "python", files: [file("print(1)")], apiKey: "" });
+  it("accepts a request with no api key (server falls back to the demo key)", () => {
+    const r = validateScanRequest({ language: "python", files: [file("print(1)")] });
+    expect(r.ok).toBe(true);
+  });
+
+  it("rejects a request missing files", () => {
+    const r = validateScanRequest({ language: "python", files: [] });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.status).toBe(400);
   });

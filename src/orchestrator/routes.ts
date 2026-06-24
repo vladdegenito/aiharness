@@ -12,6 +12,11 @@ api.post("/scans", async (c) => {
   const v = validateScanRequest(body);
   if (!v.ok) return c.json({ error: v.message }, v.status as 400 | 413);
 
+  // BYO key if provided; otherwise fall back to the server's demo key so visitors
+  // can try the live scan without bringing their own key.
+  const apiKey = (v.value.apiKey && v.value.apiKey.trim()) || c.env.DEMO_ANTHROPIC_KEY;
+  if (!apiKey) return c.json({ error: "no API key provided and no demo key configured" }, 400);
+
   const id = crypto.randomUUID();
   const sourceKey = `source/${id}.json`;
   await c.env.SOURCE.put(sourceKey, JSON.stringify({ language: v.value.language, files: v.value.files }));
@@ -19,7 +24,7 @@ api.post("/scans", async (c) => {
     id, language: v.value.language, status: "queued", sourceKey,
     modelId: "claude", modelVersion: CLAUDE_MODEL,
   });
-  const envelope = await encryptKey(c.env.KEK, v.value.apiKey);
+  const envelope = await encryptKey(c.env.KEK, apiKey);
   await storeJobKey(c.env.DB, id, envelope);
   await c.env.SCAN_QUEUE.send({ scanId: id });
   return c.json({ id }, 202);
