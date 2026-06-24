@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AIHarness — scan</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main>
+    <h1>AIHarness</h1>
+    <p>Model-agnostic AI vulnerability scan. Paste code, bring your own model key.</p>
+    <label>Language <select id="language"><option>python</option><option>javascript</option><option>java</option><option>go</option></select></label>
+    <label>Anthropic API key <input id="apiKey" type="password" placeholder="sk-ant-..." /></label>
+    <textarea id="code" rows="14" placeholder="paste code here">import subprocess
+subprocess.call(cmd, shell=True)</textarea>
+    <button id="scan">Scan</button>
+    <pre id="status"></pre>
+    <div id="findings"></div>
+    <a id="sarif" hidden>Download SARIF</a>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
