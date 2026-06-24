@@ -19,7 +19,8 @@ export class ScanRunner extends DurableObject<Env> {
     super(ctx, env);
     const container = (this.ctx as any).container;
     if (container) {
-      this.ctx.blockConcurrencyWhile(async () => { container.start(); });
+      // enableInternet so Semgrep can fetch its registry ruleset (p/default).
+      this.ctx.blockConcurrencyWhile(async () => { container.start({ enableInternet: true }); });
     }
   }
 
@@ -31,23 +32,27 @@ export class ScanRunner extends DurableObject<Env> {
   ): Promise<unknown> => {
     const container = (this.ctx as any).container;
     if (!container) throw new Error("container runtime unavailable");
-    if (!container.running) container.start();
+    if (!container.running) container.start({ enableInternet: true });
     const port = container.getTcpPort(8080);
     const init = {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ language, files }),
     };
+    // Retry ONLY while the container is still booting (connection-level errors).
+    // Once we get any HTTP response the scan has run — return 2xx, fail on non-2xx
+    // (do not re-run the expensive scan, which would loop for minutes).
     let lastErr: unknown;
-    for (let attempt = 0; attempt < 30; attempt++) {
+    for (let attempt = 0; attempt < 40; attempt++) {
       try {
-        const res = await port.fetch("http://container/scan", init);
+        const res = await port.fetch("http://container/scan", { ...init, signal: AbortSignal.timeout(150000) });
         if (res.ok) return await res.json();
-        lastErr = new Error("container responded " + res.status);
+        throw new Error("container scan failed: HTTP " + res.status);
       } catch (e) {
-        lastErr = e;  // container not ready yet
+        if (e instanceof Error && e.message.startsWith("container scan failed")) throw e;
+        lastErr = e;  // still booting — wait and retry
+        await new Promise((r) => setTimeout(r, 1500));
       }
-      await new Promise((r) => setTimeout(r, 1000));
     }
     throw lastErr ?? new Error("container scan failed to become ready");
   };
