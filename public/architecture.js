@@ -1,6 +1,15 @@
 /* ============================================================
    AIHarness — architecture pipeline animation + nav + reveal
    Vanilla JS, no dependencies. Respects prefers-reduced-motion.
+
+   RENDERING GUARANTEE:
+   - The diagram is built inside init(), which runs on
+     DOMContentLoaded (or immediately if the DOM is already
+     parsed). It is NOT gated behind an IntersectionObserver,
+     so nodes/edges/detail render reliably on load.
+   - Scroll-reveal is progressive enhancement only: a load
+     event + a setTimeout fallback force every .reveal element
+     visible, so nothing can stay hidden if the observer fails.
    ============================================================ */
 (function () {
   "use strict";
@@ -32,7 +41,7 @@
     },
     {
       stage: "ScanRunner",
-      title: "ScanRunner — Durable Object + Container",
+      title: "ScanRunner — Durable Object + Semgrep Container",
       meta: "Semgrep · deterministic SAST",
       detail: "A Durable Object drives a Container running Semgrep: deterministic static analysis with stable, pinnable rule IDs. Same code in, same findings out — fully reproducible and auditable.",
       standards: ["CWE", "CWE Top 25", "SARIF 2.1.0"]
@@ -46,17 +55,22 @@
     },
     {
       stage: "Output",
-      title: "Output",
+      title: "SARIF + audit",
       meta: "SARIF 2.1.0 · findings · audit log",
       detail: "Results emit as SARIF 2.1.0 plus structured findings and an immutable audit log (model id, version, prompt hash, ruleset versions) — reproducible and defensible.",
       standards: ["SARIF 2.1.0 (OASIS)", "Immutable audit log"]
     }
   ];
 
-  var track = document.getElementById("arch-track");
-  var detail = document.getElementById("arch-detail");
+  function buildArchitecture() {
+    var track = document.getElementById("arch-track");
+    var detail = document.getElementById("arch-detail");
+    if (!track || !detail) return;
 
-  if (track && detail) {
+    // Guard against double-build if init somehow runs twice.
+    if (track.dataset.built === "1") return;
+    track.dataset.built = "1";
+
     var nodes = [];
 
     STAGES.forEach(function (s, i) {
@@ -90,7 +104,7 @@
 
       function select() { showDetail(i); }
       btn.addEventListener("click", select);
-      btn.addEventListener("mouseenter", function () { showDetail(i, true); });
+      btn.addEventListener("mouseenter", function () { showDetail(i); });
       btn.addEventListener("focus", select);
 
       stage.appendChild(btn);
@@ -104,9 +118,9 @@
     var pulse = document.createElement("div");
     pulse.className = "arch-pulse";
     rail.appendChild(pulse);
-    track.parentNode.insertBefore(rail, detail);
+    if (track.parentNode) track.parentNode.insertBefore(rail, detail);
 
-    function showDetail(i, transient) {
+    function showDetail(i) {
       var s = STAGES[i];
       nodes.forEach(function (n, idx) { n.classList.toggle("active", idx === i); });
 
@@ -136,10 +150,10 @@
       var lastSwitch = 0;
       var STEP_MS = 1100;
       var startTs = null;
+      var rafId = null;
 
       function loop(ts) {
         if (startTs === null) { startTs = ts; lastSwitch = ts; }
-        // light nodes in sequence
         if (ts - lastSwitch >= STEP_MS) {
           nodes[lit].classList.remove("lit");
           lit = (lit + 1) % nodes.length;
@@ -147,7 +161,6 @@
         }
         nodes.forEach(function (n, idx) { n.classList.toggle("lit", idx === lit); });
 
-        // move the pulse left→right across the rail on a continuous cycle
         var cycle = (nodes.length * STEP_MS);
         var t = ((ts - startTs) % cycle) / cycle; // 0..1
         var railW = rail.clientWidth;
@@ -156,54 +169,88 @@
 
         rafId = requestAnimationFrame(loop);
       }
-      var rafId = requestAnimationFrame(loop);
+      rafId = requestAnimationFrame(loop);
 
-      // pause loop when section off-screen to save cycles
+      // pause loop when section off-screen to save cycles (animation only,
+      // NOT the build — the build already happened above)
       if ("IntersectionObserver" in window) {
         var archSection = document.getElementById("architecture");
-        var io = new IntersectionObserver(function (entries) {
-          entries.forEach(function (e) {
-            if (e.isIntersecting && !rafId) { startTs = null; rafId = requestAnimationFrame(loop); }
-            else if (!e.isIntersecting && rafId) { cancelAnimationFrame(rafId); rafId = null; }
-          });
-        }, { threshold: 0.05 });
-        io.observe(archSection);
+        if (archSection) {
+          var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) {
+              if (e.isIntersecting && rafId === null) { startTs = null; rafId = requestAnimationFrame(loop); }
+              else if (!e.isIntersecting && rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+            });
+          }, { threshold: 0.05 });
+          io.observe(archSection);
+        }
       }
     } else {
-      // static, legible state: light first node, show its detail
       nodes[0].classList.add("lit");
     }
 
-    // show the first stage's detail by default so the panel is never empty
+    // first stage detail by default so the panel is never empty
     showDetail(0);
   }
 
   /* ---------- mobile nav toggle ---------- */
-  var navToggle = document.getElementById("nav-toggle");
-  var navLinks = document.getElementById("nav-links");
-  if (navToggle && navLinks) {
-    navToggle.addEventListener("click", function () {
-      var open = navLinks.classList.toggle("open");
-      navToggle.setAttribute("aria-expanded", open ? "true" : "false");
-    });
-    navLinks.addEventListener("click", function (e) {
-      if (e.target.tagName === "A") {
-        navLinks.classList.remove("open");
-        navToggle.setAttribute("aria-expanded", "false");
-      }
-    });
+  function wireNav() {
+    var navToggle = document.getElementById("nav-toggle");
+    var navLinks = document.getElementById("nav-links");
+    if (navToggle && navLinks) {
+      navToggle.addEventListener("click", function () {
+        var open = navLinks.classList.toggle("open");
+        navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+      navLinks.addEventListener("click", function (e) {
+        if (e.target.tagName === "A") {
+          navLinks.classList.remove("open");
+          navToggle.setAttribute("aria-expanded", "false");
+        }
+      });
+    }
   }
 
-  /* ---------- scroll reveal ---------- */
-  var reveals = document.querySelectorAll(".reveal");
-  if (reduceMotion || !("IntersectionObserver" in window)) {
+  /* ---------- scroll reveal (progressive enhancement) ---------- */
+  function revealAll(reveals) {
     reveals.forEach(function (el) { el.classList.add("in"); });
-  } else {
+  }
+
+  function wireReveal() {
+    var reveals = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
+
+    if (reduceMotion || !("IntersectionObserver" in window)) {
+      revealAll(reveals);
+      return;
+    }
+
     var ro = new IntersectionObserver(function (entries, obs) {
       entries.forEach(function (e) {
         if (e.isIntersecting) { e.target.classList.add("in"); obs.unobserve(e.target); }
       });
-    }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+    }, { threshold: 0.08, rootMargin: "0px 0px -6% 0px" });
     reveals.forEach(function (el) { ro.observe(el); });
+
+    // SAFETY NET 1: once everything has loaded, force-reveal anything
+    // still hidden (e.g. if the observer never fired).
+    window.addEventListener("load", function () {
+      setTimeout(function () { revealAll(reveals); }, 600);
+    });
+    // SAFETY NET 2: hard timeout regardless of load event, so nothing
+    // can ever stay invisible.
+    setTimeout(function () { revealAll(reveals); }, 2500);
+  }
+
+  /* ---------- init ---------- */
+  function init() {
+    buildArchitecture();
+    wireNav();
+    wireReveal();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
   }
 })();

@@ -5,9 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>AIHarness — Model-agnostic AI harness for scanning source code for vulnerabilities</title>
 <meta name="description" content="AIHarness is a model-agnostic AI harness that scans source code for security vulnerabilities. Deterministic SAST (Semgrep) plus CWE-grounded, evidence-based AI triage. Outputs SARIF 2.1.0. Deployed on Cloudflare." />
+<meta name="theme-color" content="#f7f8fa" />
+<!-- Progressive-enhancement flag: scroll-reveal start-state is scoped to html.js only,
+     so with JS disabled or if the observer never fires, ALL content is visible by default. -->
+<script>document.documentElement.className += " js";</script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -112,16 +116,17 @@
     </div>
   </section>
 
-  <!-- LIVE DEMO -->
+  <!-- LIVE DEMO — Matrix terminal -->
   <section id="demo" class="section" aria-labelledby="demo-title">
     <div class="wrap">
       <header class="section-head reveal">
         <p class="kicker">Live demo</p>
         <h2 id="demo-title">Scan code right now</h2>
-        <p class="section-sub">This calls the real API. Bring your own Anthropic key, or load a planted-vulnerability sample and watch it get caught.</p>
+        <p class="section-sub">This calls the real API — no key required. Load the planted-vulnerability sample, hit run, and watch the harness catch it live in the terminal.</p>
       </header>
 
       <div class="demo reveal">
+        <!-- Controls -->
         <form class="demo-controls" id="scan-form" autocomplete="off">
           <div class="field">
             <label for="language">Language</label>
@@ -132,17 +137,9 @@
               <option value="go">Go</option>
             </select>
           </div>
-          <div class="field field-grow">
-            <label for="apiKey">Your Anthropic API key</label>
-            <input type="password" id="apiKey" name="apiKey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" />
-            <p class="privacy-note">
-              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-4z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
-              Your key is envelope-encrypted, used only for this scan, then shredded. Your code is never stored beyond the job or used for training.
-            </p>
-          </div>
           <div class="field-actions">
-            <button type="button" class="btn btn-ghost" id="load-sample">Load a vulnerable sample</button>
-            <button type="submit" class="btn btn-primary" id="scan">Scan</button>
+            <button type="button" class="btn btn-ghost" id="load-sample">Load sample</button>
+            <button type="submit" class="btn btn-primary" id="scan">Run scan</button>
           </div>
         </form>
 
@@ -151,21 +148,38 @@
           <textarea id="code" name="code" rows="14" spellcheck="false" placeholder="Paste source here, or load the sample above…"></textarea>
         </div>
 
-        <div class="demo-output">
-          <div class="scan-status" id="status-wrap" hidden>
-            <ol class="progress" id="progress" aria-label="Scan progress">
-              <li data-step="queued"><span>Queued</span></li>
-              <li data-step="scanning"><span>Scanning (Semgrep)</span></li>
-              <li data-step="triaging"><span>AI triage</span></li>
-              <li data-step="completed"><span>Complete</span></li>
-            </ol>
-            <p class="status-line" id="status" role="status" aria-live="polite"></p>
+        <!-- Advanced: optional BYO key -->
+        <details class="advanced" id="advanced">
+          <summary>Use your own Anthropic API key <span class="advanced-hint">(optional)</span></summary>
+          <div class="advanced-body">
+            <div class="field field-grow">
+              <label for="apiKey">Anthropic API key</label>
+              <input type="password" id="apiKey" name="apiKey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" />
+              <p class="privacy-note">
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-4z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+                Optional. If provided, your key is envelope-encrypted, used only for this scan, then shredded. Your code is never stored beyond the job or used for training.
+              </p>
+            </div>
           </div>
-          <div class="findings-head" id="findings-head" hidden>
-            <h3 id="findings-count">Findings</h3>
-            <a class="btn btn-small" id="sarif" href="#" download hidden>Download SARIF</a>
+        </details>
+
+        <!-- Matrix terminal -->
+        <div class="terminal" id="terminal">
+          <canvas class="rain" id="rain" aria-hidden="true"></canvas>
+          <div class="terminal-chrome">
+            <span class="tl-dots" aria-hidden="true"><i class="dot dot-r"></i><i class="dot dot-y"></i><i class="dot dot-g"></i></span>
+            <span class="terminal-title">aiharness@cf:~$</span>
           </div>
-          <div class="findings" id="findings"></div>
+          <div class="terminal-body" id="term-body" role="log" aria-live="polite" aria-label="Scan output">
+            <div class="term-lines" id="term-lines"></div>
+            <span class="term-cursor" id="term-cursor" aria-hidden="true"></span>
+          </div>
+        </div>
+
+        <!-- SARIF download (revealed on completion) -->
+        <div class="findings-head" id="findings-head" hidden>
+          <h3 id="findings-count">Findings</h3>
+          <a class="btn btn-small" id="sarif" href="#" download hidden>Download SARIF</a>
         </div>
       </div>
     </div>
