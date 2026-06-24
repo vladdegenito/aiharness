@@ -58,8 +58,7 @@
 
   function buildArchitecture() {
     var track = document.getElementById("arch-track");
-    var detail = document.getElementById("arch-detail");
-    if (!track || !detail) return;
+    if (!track) return;
 
     // Guard against double-build if init somehow runs twice.
     if (track.dataset.built === "1") return;
@@ -88,7 +87,7 @@
       btn.className = "arch-node";
       btn.setAttribute("aria-label", "0" + (i + 1) + " " + s.stage + " — " + s.sub);
 
-      // extruded 3D faces (top edge-light + right side give depth)
+      // extruded 3D faces (top edge-light + side walls give real depth)
       var faceTop = document.createElement("span");
       faceTop.className = "node-face node-face-top";
       faceTop.setAttribute("aria-hidden", "true");
@@ -98,6 +97,11 @@
       faceSide.className = "node-face node-face-side";
       faceSide.setAttribute("aria-hidden", "true");
       btn.appendChild(faceSide);
+
+      var faceBottom = document.createElement("span");
+      faceBottom.className = "node-face node-face-bottom";
+      faceBottom.setAttribute("aria-hidden", "true");
+      btn.appendChild(faceBottom);
 
       var content = document.createElement("span");
       content.className = "node-content";
@@ -119,43 +123,41 @@
 
       btn.appendChild(content);
 
-      function select() { showDetail(i); }
-      btn.addEventListener("click", select);
-      btn.addEventListener("mouseenter", function () { showDetail(i); });
-      btn.addEventListener("focus", select);
+      // per-node hover/focus OVERLAY tooltip (detail + standards) — does not
+      // take layout space, so the default (no-hover) state still fits one screen
+      var tip = document.createElement("span");
+      tip.className = "node-tip";
+      tip.setAttribute("role", "tooltip");
+
+      var tipP = document.createElement("span");
+      tipP.className = "node-tip-detail";
+      tipP.textContent = s.detail;
+      tip.appendChild(tipP);
+
+      var tipUl = document.createElement("span");
+      tipUl.className = "node-tip-standards";
+      s.standards.forEach(function (label) {
+        var chip = document.createElement("span");
+        chip.className = "node-tip-chip";
+        chip.textContent = label;
+        tipUl.appendChild(chip);
+      });
+      tip.appendChild(tipUl);
+      btn.appendChild(tip);
+
+      function activate() {
+        nodes.forEach(function (n, idx) { n.classList.toggle("active", idx === i); });
+      }
+      btn.addEventListener("click", activate);
+      btn.addEventListener("mouseenter", activate);
+      btn.addEventListener("focus", activate);
+      btn.addEventListener("mouseleave", function () { btn.classList.remove("active"); });
+      btn.addEventListener("blur", function () { btn.classList.remove("active"); });
 
       stage.appendChild(btn);
       track.appendChild(stage);
       nodes.push(btn);
     });
-
-    function showDetail(i) {
-      var s = STAGES[i];
-      nodes.forEach(function (n, idx) { n.classList.toggle("active", idx === i); });
-
-      detail.replaceChildren();
-
-      var h = document.createElement("h3");
-      var idx = document.createElement("span");
-      idx.className = "arch-detail-idx";
-      idx.textContent = "0" + (i + 1);
-      h.appendChild(idx);
-      h.appendChild(document.createTextNode(s.stage));
-      detail.appendChild(h);
-
-      var p = document.createElement("p");
-      p.textContent = s.detail;
-      detail.appendChild(p);
-
-      var ul = document.createElement("ul");
-      ul.className = "detail-standards";
-      s.standards.forEach(function (label) {
-        var li = document.createElement("li");
-        li.textContent = label;
-        ul.appendChild(li);
-      });
-      detail.appendChild(ul);
-    }
 
     /* ---------- looping pulse animation ---------- */
     if (!reduceMotion) {
@@ -205,9 +207,6 @@
       track.querySelectorAll(".arch-link").forEach(function (l) { l.classList.add("flowing"); });
       track.style.setProperty("--flow", "1");
     }
-
-    // first stage detail by default so the panel is never empty
-    showDetail(0);
   }
 
   /* ---------- mobile nav toggle ---------- */

@@ -132,22 +132,29 @@ a:hover { text-decoration: underline; }
 
 /* ===== architecture responsive: stack gracefully below desktop ===== */
 @media (max-width: 1100px) {
-  .arch-scene { perspective: 1700px; perspective-origin: 50% 50%; padding: 1.4rem .25rem 1rem; }
+  .firstscreen { height: auto; min-height: 0; max-height: none; }
+  .arch-scene { perspective: 1700px; perspective-origin: 50% 50%; padding: 2rem .5rem 2.4rem; }
+  .arch-floor { display: none; }
   .arch-stage-track {
     grid-template-columns: repeat(3, 1fr);
     grid-auto-rows: 1fr;
-    gap: 1.1rem 1.4rem;
-    transform: rotateX(6deg);
+    gap: 2.4rem 1.6rem;
+    transform: rotateX(14deg);
   }
-  .arch-node { margin: 0 12px; min-height: 124px; }
+  .arch-node { margin: 0 12px; min-height: 130px; }
   .arch-stage:first-child .arch-node, .arch-stage:last-child .arch-node { margin: 0 12px; }
   .arch-link { display: none; }
+  .node-tip, .arch-stage:first-child .node-tip, .arch-stage:last-child .node-tip {
+    left: 50%; right: auto; transform: translateX(-50%) translateZ(80px) rotateX(-14deg) scale(.96);
+  }
 }
 @media (max-width: 640px) {
-  .arch-scene { perspective: none; transform-style: flat; padding: .5rem 0 .5rem; }
-  .arch-stage-track { grid-template-columns: 1fr; gap: .9rem; transform: none; }
-  .arch-node { margin: 0; min-height: 0; }
+  .arch-scene { perspective: none; transform-style: flat; padding: 1rem 0; }
+  .arch-floor { display: none; }
+  .arch-stage-track { grid-template-columns: 1fr; gap: 1rem; transform: none; }
+  .arch-node { margin: 0; min-height: 0; transform: none; }
   .arch-stage:first-child .arch-node, .arch-stage:last-child .arch-node { margin: 0; }
+  .node-face-side, .node-face-bottom { display: none; }
 }
 
 @media (max-width: 860px) {
@@ -185,35 +192,53 @@ a:hover { text-decoration: underline; }
 .btn-ghost:hover { border-color: var(--signal); color: var(--signal-2); background: var(--tint); }
 .btn-small { padding: .5rem 1rem; font-size: .85rem; }
 
-/* ===================== HERO ===================== */
-.hero { position: relative; padding: 2.6rem 0 1.1rem; overflow: hidden; }
+/* ===================== FIRST SCREEN (HERO + ARCHITECTURE) ===================== */
+/* Single no-scroll viewport: condensed hero on top, dramatic 3D pipeline below. */
+.firstscreen {
+  position: relative; overflow: hidden;
+  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  display: flex; flex-direction: column;
+  padding: 0;
+}
+.firstscreen-inner {
+  position: relative; z-index: 1;
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+  padding-top: .8rem;
+  padding-bottom: 1rem;
+}
 .hero-grid {
   position: absolute; inset: 0; z-index: 0;
   background-image:
     linear-gradient(var(--line) 1px, transparent 1px),
     linear-gradient(90deg, var(--line) 1px, transparent 1px);
   background-size: 56px 56px;
-  mask-image: radial-gradient(820px 520px at 70% 8%, #000 8%, transparent 70%);
-  opacity: .65;
+  mask-image: radial-gradient(900px 600px at 60% 0%, #000 6%, transparent 72%);
+  opacity: .6;
 }
-.hero-inner { position: relative; z-index: 1; max-width: 900px; }
+
+/* --- condensed hero --- */
+.hero-top { flex: 0 0 auto; max-width: 900px; }
 .eyebrow {
-  font-family: var(--mono); font-size: .82rem; letter-spacing: .04em; text-transform: uppercase;
-  color: var(--signal-2); margin: 0 0 .9rem;
+  font-family: var(--mono); font-size: .78rem; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--signal-2); margin: 0 0 .5rem;
 }
-.hero h1 {
-  font-size: clamp(2.1rem, 4.4vw, 3.3rem); font-weight: 800;
+.firstscreen h1 {
+  font-size: clamp(1.7rem, 3.3vw, 2.55rem); font-weight: 800;
   color: var(--ink);
-  letter-spacing: -0.03em;
-  max-width: 18ch;
+  letter-spacing: -0.03em; line-height: 1.05;
+  max-width: 20ch; margin: 0;
 }
-.lede { font-size: clamp(1rem, 1.5vw, 1.14rem); color: var(--ink-soft); max-width: 760px; margin: .9rem 0 0; }
+.lede { font-size: clamp(.95rem, 1.25vw, 1.06rem); color: var(--ink-soft); max-width: 680px; margin: .55rem 0 0; line-height: 1.5; }
 .lede strong { color: var(--ink); font-weight: 600; }
-.hero-cta { display: flex; flex-wrap: wrap; gap: .9rem; margin-top: 1.3rem; }
-.hero-badges { display: flex; flex-wrap: wrap; gap: .6rem; list-style: none; padding: 0; margin: 1.2rem 0 0; }
+.hero-cta { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: .85rem; }
+.hero-cta .btn { padding: .62rem 1.2rem; font-size: .92rem; }
+.hero-badges { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; padding: 0; margin: .8rem 0 0; }
 .hero-badges li {
-  font-family: var(--mono); font-size: .8rem; color: var(--ink-soft);
-  border: 1px solid var(--line-2); border-radius: 999px; padding: .42rem .85rem;
+  font-family: var(--mono); font-size: .74rem; color: var(--ink-soft);
+  border: 1px solid var(--line-2); border-radius: 999px; padding: .32rem .75rem;
   background: var(--panel); box-shadow: var(--shadow-sm);
 }
 
@@ -228,29 +253,54 @@ a:hover { text-decoration: underline; }
 .section-head h2 { font-size: clamp(1.8rem, 3.4vw, 2.7rem); font-weight: 700; }
 .section-sub { color: var(--ink-soft); font-size: 1.08rem; margin: 1rem 0 0; }
 
-/* ===================== ARCHITECTURE (3D) ===================== */
-/* condensed so HERO + this section fit ~1 viewport on desktop */
-#architecture { padding: 1.4rem 0 3rem; border-top: 0; }
-#architecture .section-head { margin-bottom: .2rem; }
-#architecture .section-head h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
-#architecture .section-sub { font-size: 1rem; margin-top: .5rem; }
-
-.arch { display: grid; gap: 1.2rem; --flow: 0; }
-
-/* The 3D stage: perspective container, gently tilted so the row of nodes
-   reads as solid objects receding into depth. */
-.arch-scene {
-  perspective: 1350px;
-  perspective-origin: 50% 26%;
-  padding: 1.7rem .25rem 1.4rem;
+/* ===================== ARCHITECTURE (DRAMATIC 3D) ===================== */
+.arch {
+  --flow: 0;
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  margin-top: .4rem;
 }
+.arch-caption {
+  font-family: var(--mono); font-size: .78rem; letter-spacing: .04em;
+  color: var(--ink-soft); margin: 0 0 .2rem; text-align: center;
+}
+.arch-caption span { color: var(--ink-dim); }
+
+/* The 3D stage: deep perspective + strong iso tilt so the row of solid blocks
+   recedes into space and reads unmistakably as a 3D pipeline. */
+.arch-scene {
+  position: relative;
+  perspective: 950px;
+  perspective-origin: 50% 32%;
+  padding: 3rem 2.4rem 4rem;
+  flex: 1; min-height: 0;
+  display: flex; align-items: center;
+}
+
+/* a soft lit ground plane behind the blocks to catch their cast shadows */
+.arch-floor {
+  position: absolute; left: 2%; right: 2%; top: 30%; bottom: 0%;
+  transform-style: preserve-3d;
+  transform: rotateX(62deg) translateZ(-90px);
+  background:
+    radial-gradient(120% 100% at 50% 18%, rgba(7,168,131,.16), transparent 60%),
+    linear-gradient(180deg, #ecf2f3, #dde6e8);
+  border-radius: 50%;
+  filter: blur(12px);
+  opacity: .95;
+  pointer-events: none;
+}
+
 .arch-stage-track {
+  position: relative;
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  align-items: stretch;
+  align-items: center;
   gap: 0;
   transform-style: preserve-3d;
-  transform: rotateX(17deg) translateZ(-14px);
+  /* dramatic recede + iso tilt */
+  transform: rotateX(32deg) rotateY(-2deg) rotateZ(-1.5deg) translateZ(-20px);
 }
 
 .arch-stage {
@@ -260,42 +310,45 @@ a:hover { text-decoration: underline; }
   min-width: 0;            /* allow grid cells to shrink, never overflow */
 }
 
-/* 3D connector between adjacent nodes — a beam in the depth plane */
+/* dimensional 3D connector between adjacent nodes — a raised beam in depth */
 .arch-link {
   position: absolute;
   top: 50%;
-  left: calc(100% - 14px);
-  width: 28px;
-  height: 4px;
-  margin-top: -2px;
+  left: calc(100% - 18px);
+  width: 36px;
+  height: 6px;
+  margin-top: -3px;
   z-index: 0;
   transform-style: preserve-3d;
-  transform: translateZ(6px);
-  background: linear-gradient(90deg, var(--line-2), var(--line));
-  border-radius: 4px;
-  box-shadow: 0 1px 0 rgba(255,255,255,.6);
+  transform: translateZ(22px);
+  background: linear-gradient(90deg, var(--line-2), #d8dee4);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(14,23,38,.18), 0 1px 0 rgba(255,255,255,.7) inset;
 }
 .arch-link::before {       /* base rail glow when the flow passes */
-  content: ""; position: absolute; inset: 0; border-radius: 4px;
+  content: ""; position: absolute; inset: 0; border-radius: 6px;
   background: linear-gradient(90deg, var(--signal-2), var(--signal));
+  box-shadow: 0 0 12px 2px var(--signal-glow);
   opacity: 0; transition: opacity .4s var(--ease);
 }
-.arch-link.flowing::before { opacity: .9; }
+.arch-link.flowing::before { opacity: .95; }
 /* energy packet riding the connector, position driven by --flow (0..1) */
 .arch-link-packet {
   position: absolute; top: 50%; left: 0;
-  width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #fff, var(--signal) 55%, var(--signal-deep));
-  box-shadow: 0 0 10px 3px var(--signal-glow), 0 0 4px 1px var(--signal);
+  width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff, var(--signal) 52%, var(--signal-deep));
+  box-shadow: 0 0 16px 5px var(--signal-glow), 0 0 7px 2px var(--signal);
   opacity: 0;
-  transform: translateX(0);
+  transform: translateX(0) translateZ(8px);
 }
 .arch-link.flowing .arch-link-packet {
   opacity: 1;
-  transform: translateX(calc(var(--flow) * 28px));
+  transform: translateX(calc(var(--flow) * 36px)) translateZ(8px);
 }
 
-/* The node: an extruded 3D block (front face = button, plus top + side faces) */
+/* ---- The node: a genuinely EXTRUDED 3D block ----
+   .arch-node = the top (front) face. Two pseudo-elements build the side
+   walls; layered box-shadows fake the extruded thickness + cast shadow. */
 .arch-node {
   position: relative;
   z-index: 1;
@@ -303,89 +356,104 @@ a:hover { text-decoration: underline; }
   width: 100%;
   cursor: pointer;
   transform-style: preserve-3d;
-  transform: translateZ(0);
-  background: linear-gradient(165deg, #ffffff 0%, var(--panel-2) 60%, var(--tint) 100%);
+  transform: translateZ(18px);
+  background: linear-gradient(158deg, #ffffff 0%, var(--panel-2) 55%, var(--tint) 100%);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 0;
-  margin: 0 17px;
-  min-height: 132px;
+  margin: 0 13px;
+  min-height: 158px;
   display: flex;
+  /* the long lower shadow = the extruded thickness; the wide soft shadow = cast on ground */
   box-shadow:
-    0 1px 0 rgba(255,255,255,.9) inset,
-    0 18px 30px -18px rgba(14,23,38,.30),
-    0 6px 14px -10px rgba(14,23,38,.18);
-  transition: transform .3s var(--ease), box-shadow .3s var(--ease),
+    0 1px 0 rgba(255,255,255,.95) inset,
+    2px 6px 0 -1px #cdd6dd,
+    4px 12px 0 -2px #c2ccd4,
+    6px 18px 0 -3px #b9c4cd,
+    0 30px 40px -16px rgba(14,23,38,.42),
+    0 14px 22px -12px rgba(14,23,38,.28);
+  transition: transform .35s var(--ease), box-shadow .35s var(--ease),
               border-color .3s var(--ease), background .3s var(--ease);
   color: var(--ink); font-family: var(--sans);
 }
 .arch-stage:first-child .arch-node { margin-left: 0; }
-/* keep the last node's right edge (incl. its 3D side wall) inside the track,
-   so the container never reports horizontal overflow */
-.arch-stage:last-child .arch-node { margin-right: 13px; }
+.arch-stage:last-child .arch-node { margin-right: 8px; }
 
-/* extruded faces give real depth (top edge-light + right side wall) */
-.node-face { position: absolute; border-radius: 14px; pointer-events: none; }
+/* extruded faces give real depth (top edge-light glow + lit side walls) */
+.node-face { position: absolute; pointer-events: none; }
 .node-face-top {
-  inset: 0;
-  transform: translateZ(-1px) translateY(-8px);
-  background: linear-gradient(180deg, rgba(7,168,131,.12), transparent 58%);
+  inset: 0; border-radius: 14px;
+  transform: translateZ(.5px);
+  background: linear-gradient(180deg, rgba(7,168,131,.10), transparent 52%);
   filter: blur(.5px);
 }
-/* right side wall — gives each node the look of a solid extruded block */
+/* right + bottom side walls built as 3D-rotated faces = solid block look */
 .node-face-side {
-  top: 7px; bottom: 9px; right: -11px; width: 12px;
-  border-radius: 0 10px 10px 0;
-  transform: rotateY(40deg);
+  top: 8px; bottom: 10px; right: -13px; width: 14px;
+  border-radius: 0 11px 11px 0;
+  transform: rotateY(52deg);
   transform-origin: left center;
-  background: linear-gradient(180deg, #dde4ea 0%, #c6cfd7 70%, #b6c0c9 100%);
-  box-shadow: -1px 0 4px rgba(14,23,38,.14);
+  background: linear-gradient(180deg, #d3dbe2 0%, #bcc6cf 60%, #a9b5bf 100%);
+  box-shadow: -1px 0 5px rgba(14,23,38,.16);
+}
+.node-face-bottom {
+  left: 9px; right: 5px; bottom: -13px; height: 14px;
+  border-radius: 0 0 11px 11px;
+  transform: rotateX(-58deg);
+  transform-origin: center top;
+  background: linear-gradient(90deg, #c9d2da 0%, #b8c2cb 100%);
 }
 .arch-node.lit .node-face-side, .arch-node.active .node-face-side {
-  background: linear-gradient(180deg, #b8e6d8 0%, #7fcdb6 70%, #5bbca0 100%);
+  background: linear-gradient(180deg, #a7e2d1 0%, #6ec7ad 60%, #4cb999 100%);
+}
+.arch-node.lit .node-face-bottom, .arch-node.active .node-face-bottom {
+  background: linear-gradient(90deg, #8fd6c1 0%, #66c2a7 100%);
 }
 
 .node-content {
   position: relative; z-index: 2;
   display: flex; flex-direction: column;
-  padding: 1.05rem 1.05rem 1.1rem;
+  padding: 1rem 1rem 1.05rem;
   width: 100%;
 }
 
+/* hover / focus — block pops dramatically forward in Z */
 .arch-node:hover, .arch-node:focus-visible {
   outline: none;
-  transform: translateZ(34px) translateY(-3px);
+  transform: translateZ(70px) translateY(-4px);
   border-color: var(--signal);
   box-shadow:
-    0 1px 0 rgba(255,255,255,.9) inset,
+    0 1px 0 rgba(255,255,255,.95) inset,
+    2px 6px 0 -1px #b8e3d6,
+    4px 12px 0 -2px #a3dbc9,
+    6px 18px 0 -3px #8fd2bd,
     0 0 0 1px var(--signal),
-    0 28px 44px -20px rgba(7,168,131,.42),
-    0 10px 20px -12px rgba(14,23,38,.25);
+    0 40px 60px -22px rgba(7,168,131,.55),
+    0 16px 28px -12px rgba(14,23,38,.3);
 }
 .arch-node.active {
   border-color: var(--signal);
-  background: linear-gradient(165deg, #ffffff, var(--signal-soft));
-  box-shadow:
-    0 1px 0 rgba(255,255,255,.9) inset,
-    0 0 0 1px var(--signal),
-    0 22px 38px -18px rgba(7,168,131,.40);
+  background: linear-gradient(158deg, #ffffff, var(--signal-soft));
 }
 /* live "lit" state driven by JS during the loop — node pops + glows */
 .arch-node.lit {
-  transform: translateZ(28px) translateY(-2px);
+  transform: translateZ(56px) translateY(-3px);
   border-color: var(--signal);
-  background: linear-gradient(165deg, #ffffff, var(--signal-soft));
+  background: linear-gradient(158deg, #ffffff, var(--signal-soft));
   box-shadow:
-    0 1px 0 rgba(255,255,255,.9) inset,
+    0 1px 0 rgba(255,255,255,.95) inset,
+    2px 6px 0 -1px #b8e3d6,
+    4px 12px 0 -2px #a3dbc9,
+    6px 18px 0 -3px #8fd2bd,
     0 0 0 1px var(--signal),
-    0 26px 42px -18px rgba(7,168,131,.50),
-    0 0 26px 2px var(--signal-glow);
+    0 38px 56px -20px rgba(7,168,131,.6),
+    0 0 34px 3px var(--signal-glow);
 }
-.arch-node.lit .node-face-top { background: linear-gradient(180deg, rgba(7,168,131,.30), transparent 65%); }
+.arch-node.lit .node-face-top { background: linear-gradient(180deg, rgba(7,168,131,.30), transparent 60%); }
 
 .node-dot {
   width: 9px; height: 9px; border-radius: 50%; background: var(--line-2);
-  margin-bottom: .6rem; flex: 0 0 auto;
+  margin-bottom: .5rem; flex: 0 0 auto;
   box-shadow: 0 0 0 0 var(--signal-soft);
   transition: background .3s var(--ease), box-shadow .3s var(--ease);
 }
@@ -394,34 +462,66 @@ a:hover { text-decoration: underline; }
   box-shadow: 0 0 0 4px var(--signal-soft), 0 0 10px 1px var(--signal-glow);
 }
 .node-stage {
-  display: block; font-family: var(--mono); font-size: .7rem; letter-spacing: .06em;
+  display: block; font-family: var(--mono); font-size: .68rem; letter-spacing: .05em;
   text-transform: uppercase; color: var(--signal-2); font-weight: 600;
-  margin-bottom: .5rem;
+  margin-bottom: .42rem;
 }
 .node-sub {
-  display: block; font-size: .8rem; line-height: 1.42; color: var(--ink-soft);
+  display: block; font-size: .76rem; line-height: 1.4; color: var(--ink-soft);
   font-weight: 500;
   /* always wrap inside the node, never truncate */
   overflow-wrap: anywhere; word-break: normal; hyphens: auto;
 }
 
-/* detail panel */
-.arch-detail {
-  position: relative; z-index: 3;
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
-  padding: 1.3rem 1.5rem; min-height: 108px;
-  box-shadow: 0 10px 28px -16px rgba(14,23,38,.22), var(--shadow-sm);
+/* ---- per-node hover/focus OVERLAY tooltip (detail + standards) ----
+   absolutely positioned, counter-rotated flat to face the viewer, and only
+   shown on hover/focus — so it never consumes layout in the default state. */
+.node-tip {
+  position: absolute;
+  left: 50%; bottom: calc(100% + 16px);
+  width: 250px; max-width: 78vw;
+  transform: translateX(-50%) translateZ(80px) rotateX(-26deg) scale(.96);
+  transform-origin: bottom center;
+  background: var(--panel);
+  border: 1px solid var(--signal);
+  border-radius: var(--r-sm);
+  padding: .8rem .9rem;
+  box-shadow: 0 22px 48px -18px rgba(14,23,38,.4), 0 0 0 1px rgba(7,168,131,.15);
+  opacity: 0; visibility: hidden;
+  pointer-events: none;
+  z-index: 40;
+  transition: opacity .22s var(--ease), transform .22s var(--ease), visibility .22s;
 }
-.arch-detail-empty { color: var(--ink-dim); margin: 0; font-family: var(--mono); font-size: .9rem; }
-.arch-detail h3 { font-size: 1.12rem; margin-bottom: .45rem; display: flex; align-items: baseline; gap: .55rem; }
-.arch-detail-idx { font-family: var(--mono); font-size: .82rem; color: var(--signal-2); font-weight: 700; }
-.arch-detail p { color: var(--ink-soft); margin: 0 0 .8rem; font-size: .98rem; }
-.arch-detail .detail-standards { display: flex; flex-wrap: wrap; gap: .45rem; list-style: none; padding: 0; margin: 0; }
-.arch-detail .detail-standards li {
-  font-family: var(--mono); font-size: .74rem; color: var(--signal-2);
+.node-tip::after {
+  content: ""; position: absolute; left: 50%; bottom: -7px; margin-left: -7px;
+  width: 14px; height: 14px; background: var(--panel);
+  border-right: 1px solid var(--signal); border-bottom: 1px solid var(--signal);
+  transform: rotate(45deg);
+}
+.arch-node:hover .node-tip,
+.arch-node:focus-visible .node-tip {
+  opacity: 1; visibility: visible;
+  transform: translateX(-50%) translateZ(80px) rotateX(-26deg) scale(1);
+}
+.node-tip-detail {
+  display: block; font-size: .8rem; line-height: 1.45; color: var(--ink-soft);
+  margin-bottom: .6rem;
+}
+.node-tip-standards { display: flex; flex-wrap: wrap; gap: .35rem; }
+.node-tip-chip {
+  font-family: var(--mono); font-size: .68rem; color: var(--signal-2);
   border: 1px solid var(--signal-soft); background: var(--tint);
-  border-radius: 999px; padding: .3rem .7rem;
+  border-radius: 999px; padding: .22rem .55rem; line-height: 1.2;
 }
+/* nudge first/last tooltips inward so they don't clip the viewport edge */
+.arch-stage:first-child .node-tip { left: 0; transform: translateX(0) translateZ(80px) rotateX(-26deg) scale(.96); }
+.arch-stage:first-child .arch-node:hover .node-tip,
+.arch-stage:first-child .arch-node:focus-visible .node-tip { transform: translateX(0) translateZ(80px) rotateX(-26deg) scale(1); }
+.arch-stage:first-child .node-tip::after { left: 60px; }
+.arch-stage:last-child .node-tip { left: auto; right: 0; transform: translateX(0) translateZ(80px) rotateX(-26deg) scale(.96); }
+.arch-stage:last-child .arch-node:hover .node-tip,
+.arch-stage:last-child .arch-node:focus-visible .node-tip { transform: translateX(0) translateZ(80px) rotateX(-26deg) scale(1); }
+.arch-stage:last-child .node-tip::after { left: auto; right: 60px; }
 
 /* ===================== HOW IT WORKS ===================== */
 .how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.25rem; }

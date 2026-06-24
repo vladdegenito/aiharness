@@ -45,40 +45,31 @@
 
 <main id="main">
 
-  <!-- HERO -->
-  <section class="hero" aria-labelledby="hero-title">
+  <!-- HERO + ARCHITECTURE — single no-scroll first screen -->
+  <section class="firstscreen" id="architecture" aria-labelledby="hero-title">
     <div class="hero-grid" aria-hidden="true"></div>
-    <div class="wrap hero-inner">
-      <p class="eyebrow reveal">Model-agnostic · Cloudflare-native · SARIF 2.1.0</p>
-      <h1 id="hero-title" class="reveal">Yes — a model-agnostic AI harness for scanning code for vulnerabilities.</h1>
-      <p class="lede reveal">AIHarness pairs <strong>deterministic SAST</strong> with <strong>evidence-based AI triage</strong>. Reproducible scanner rules give you stable, auditable coverage; a model-agnostic adapter (Claude · OpenAI · Gemini) adds context, dedupe, and plain-language remediation — confidence grounded in evidence, not a model's self-rating.</p>
-      <div class="hero-cta reveal">
-        <a class="btn btn-primary" href="#demo">Run a live scan</a>
-        <a class="btn btn-ghost" href="#architecture">See how it works</a>
-      </div>
-      <ul class="hero-badges reveal" aria-label="Key properties">
-        <li>BYO-key · envelope-encrypted · shredded</li>
-        <li>Code treated as data — prompt-injection defense</li>
-        <li>Immutable audit log</li>
-      </ul>
-    </div>
-  </section>
+    <div class="wrap firstscreen-inner">
 
-  <!-- ARCHITECTURE -->
-  <section id="architecture" class="section" aria-labelledby="arch-title">
-    <div class="wrap">
-      <header class="section-head reveal">
-        <p class="kicker">The pipeline</p>
-        <h2 id="arch-title">An auditable scan, end to end</h2>
-        <p class="section-sub">Watch a scan flow left to right. Hover or focus any stage to see what it does and which standards it satisfies.</p>
-      </header>
-
-      <div class="arch reveal" id="arch">
-        <div class="arch-scene">
-          <div class="arch-stage-track" id="arch-track" role="list" aria-label="Pipeline stages"></div>
+      <div class="hero-top">
+        <p class="eyebrow reveal">Model-agnostic · Cloudflare-native · SARIF 2.1.0</p>
+        <h1 id="hero-title" class="reveal">A model-agnostic AI harness that scans code for vulnerabilities.</h1>
+        <p class="lede reveal">Deterministic SAST meets evidence-based AI triage — reproducible coverage, model-agnostic adapter, confidence grounded in evidence.</p>
+        <div class="hero-cta reveal">
+          <a class="btn btn-primary" href="#demo">Run a live scan</a>
+          <a class="btn btn-ghost" href="#how">See how it works</a>
         </div>
-        <div class="arch-detail" id="arch-detail" aria-live="polite">
-          <p class="arch-detail-empty">Select a stage above to inspect what it does and which standards it satisfies.</p>
+        <ul class="hero-badges reveal" aria-label="Key properties">
+          <li>BYO-key · envelope-encrypted · shredded</li>
+          <li>Code treated as data</li>
+          <li>Immutable audit log</li>
+        </ul>
+      </div>
+
+      <div class="arch reveal" id="arch" aria-label="Pipeline architecture">
+        <p class="arch-caption">The pipeline — an auditable scan, end to end. <span>Hover any stage for details.</span></p>
+        <div class="arch-scene">
+          <div class="arch-floor" aria-hidden="true"></div>
+          <div class="arch-stage-track" id="arch-track" role="list" aria-label="Pipeline stages"></div>
         </div>
       </div>
     </div>
