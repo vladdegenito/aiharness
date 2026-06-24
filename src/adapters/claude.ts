@@ -33,12 +33,16 @@ export class ClaudeAdapter implements ModelAdapter {
   async analyze(input: TriageInput): Promise<TriageOutput> {
     const user = buildUserPrompt(input);
     for (let attempt = 0; attempt < 3; attempt++) {
-      const text = await this.call(
-        SYSTEM_PROMPT,
-        attempt === 0 ? user : `${user}\n\nYour previous reply was not valid JSON. Reply with ONLY the JSON object.`
-      );
-      const parsed = this.tryParse(text);
-      if (parsed) return parsed;
+      try {
+        const text = await this.call(
+          SYSTEM_PROMPT,
+          attempt === 0 ? user : `${user}\n\nYour previous reply was not valid JSON. Reply with ONLY the JSON object.`
+        );
+        const parsed = this.tryParse(text);
+        if (parsed) return parsed;
+      } catch {
+        // treat a thrown error (network, 429, 500, timeout) as a failed attempt
+      }
     }
     return {
       verdict: "uncertain",

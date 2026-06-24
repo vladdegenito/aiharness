@@ -27,4 +27,11 @@ describe("ClaudeAdapter", () => {
     expect(out.verdict).toBe("uncertain");
     expect(out.explanation).toContain("needs review");
   });
+
+  it("degrades to needs-review when the model call throws (e.g. network error)", async () => {
+    const adapter = new ClaudeAdapter("fake-key", async () => { throw new Error("network error"); });
+    const out = await adapter.analyze(input);
+    expect(out.verdict).toBe("uncertain");
+    expect(out.explanation).toContain("needs review");
+  });
 });
