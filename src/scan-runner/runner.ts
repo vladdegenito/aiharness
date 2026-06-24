@@ -1,6 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "../index";
 import type { Finding } from "../types";
+import type { ModelAdapter } from "../adapters/model-adapter";
+import { ClaudeAdapter } from "../adapters/claude";
 import { normalizeSemgrep } from "./semgrep-normalize";
 
 // NOTE (minimal adjustment, per task brief): ScanRunner extends DurableObject rather
@@ -32,6 +34,9 @@ export class ScanRunner extends DurableObject<Env> {
     return res.json();
   };
 
+  // overridable in tests — model adapter factory
+  makeAdapter: (apiKey: string) => ModelAdapter = (apiKey) => new ClaudeAdapter(apiKey);
+
   async scanToFindings(
     language: string,
     files: { path: string; content: string }[],
@@ -40,10 +45,46 @@ export class ScanRunner extends DurableObject<Env> {
     return normalizeSemgrep(raw);
   }
 
-  // Full orchestration entrypoint (wired in Task 12).
-  async runScan(_scanId: string): Promise<void> {
-    // Implemented incrementally; Task 12 fills the R2 load + triage + report calls.
-    throw new Error("runScan wired in Task 12");
+  async runScan(scanId: string): Promise<void> {
+    const { getScan, setScanStatus, setScanSarifKey, insertFindings, getJobKey, deleteJobKey } = await import("../db/queries");
+    const { decryptKey } = await import("../crypto/envelope");
+    const { triageFindings } = await import("../triage/engine");
+    const { buildSarif } = await import("../report/sarif");
+    const { recordAudit, hashPrompt } = await import("../report/audit");
+    const { SYSTEM_PROMPT } = await import("../adapters/model-adapter");
+
+    const env = this.env;
+    try {
+      const scan = await getScan(env.DB, scanId);
+      if (!scan) throw new Error("scan not found");
+      await setScanStatus(env.DB, scanId, "scanning");
+
+      const obj = await env.SOURCE.get(scan.sourceKey);
+      const { language, files } = JSON.parse(await obj!.text());
+
+      const findings = await this.scanToFindings(language, files);
+
+      await setScanStatus(env.DB, scanId, "triaging");
+      const envelope = await getJobKey(env.DB, scanId);
+      const apiKey = await decryptKey(env.KEK, envelope!);
+      const adapter = this.makeAdapter(apiKey);
+      const triaged = await triageFindings(findings, adapter, (f) => f.snippet);
+
+      await insertFindings(env.DB, scanId, triaged);
+      const sarif = buildSarif(triaged, { toolVersion: "0.0.1" });
+      const sarifKey = `sarif/${scanId}.json`;
+      await env.SOURCE.put(sarifKey, JSON.stringify(sarif));
+      await setScanSarifKey(env.DB, scanId, sarifKey);
+
+      await recordAudit(env.DB, scanId, {
+        modelId: "claude", modelVersion: scan.modelVersion,
+        promptHash: await hashPrompt(SYSTEM_PROMPT), rulesetVersion: "p/default",
+      });
+    } finally {
+      await deleteJobKey(env.DB, scanId);                 // always shred the key
+      await setScanStatus(env.DB, scanId, "completed");
+      await env.SOURCE.delete(`source/${scanId}.json`).catch(() => {});  // TTL: drop source
+    }
   }
 
   // Stub: replaced by Container.containerFetch in production.
