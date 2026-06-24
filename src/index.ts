@@ -1,13 +1,15 @@
 import { Hono } from "hono";
 import { api } from "./orchestrator/routes";
+import { ScanRunner } from "./scan-runner/runner";
 
-export { ScanRunner } from "./scan-runner/runner";
+export { ScanRunner };
 
 export interface Env {
   DB: D1Database;
   SOURCE: R2Bucket;
   SCAN_QUEUE: Queue;
-  SCAN_RUNNER: DurableObjectNamespace;
+  // Parameterized so RPC calls (e.g. stub.runScan) are type-checked at the call site.
+  SCAN_RUNNER: DurableObjectNamespace<ScanRunner>;
   ASSETS: Fetcher;
   KEK: string;
 }

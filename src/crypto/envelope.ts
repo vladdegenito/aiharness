@@ -16,7 +16,9 @@ async function importKek(kekB64: string): Promise<CryptoKey> {
 // Envelope format: base64(dekIv) + "." + base64(wrappedDek) + "." + base64(dataIv) + "." + base64(ciphertext)
 export async function encryptKey(kekB64: string, plaintext: string): Promise<string> {
   const kek = await importKek(kekB64);
-  const dek = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+  // AES-GCM with a length always yields a single CryptoKey (never a CryptoKeyPair);
+  // the cast narrows the union for wrapKey/encrypt below.
+  const dek = (await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"])) as CryptoKey;
   const dekIv = crypto.getRandomValues(new Uint8Array(12));
   const wrappedDek = new Uint8Array(await crypto.subtle.wrapKey("raw", dek, kek, { name: "AES-GCM", iv: dekIv }));
   const dataIv = crypto.getRandomValues(new Uint8Array(12));
