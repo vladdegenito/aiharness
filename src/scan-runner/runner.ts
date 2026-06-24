@@ -54,12 +54,15 @@ export class ScanRunner extends DurableObject<Env> {
     const { SYSTEM_PROMPT } = await import("../adapters/model-adapter");
 
     const env = this.env;
+    // Load + idempotency guard BEFORE the try/finally: a retry of an already-finished
+    // scan must be a true no-op and must NOT run the finally cleanup (which would flip a
+    // completed scan to "failed" and re-delete its source).
+    const scan = await getScan(env.DB, scanId);
+    if (!scan) return;                                   // unknown scan — nothing to do
+    if (scan.status === "completed" || scan.status === "failed") return;
+
     let succeeded = false;
     try {
-      const scan = await getScan(env.DB, scanId);
-      if (!scan) throw new Error("scan not found");
-      // Fix 3: idempotency guard — skip re-running a finished scan (handles queue retries)
-      if (scan.status === "completed" || scan.status === "failed") return;
       await setScanStatus(env.DB, scanId, "scanning");
 
       // Fix 2: guard missing R2 object before parsing
