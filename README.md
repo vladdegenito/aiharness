@@ -264,9 +264,9 @@ aiharness/
 ## Author & contact
 
 **Built by Vladimir Kamenev for Chevron.**
-Contact: **5123369618**
+Contact: **5123369618** · burademirung@gmail.com
 
-Live: [https://aiharness.degenito.ai](https://aiharness.degenito.ai) · [https://aiharness.jon-79f.workers.dev](https://aiharness.jon-79f.workers.dev)
+Live: [https://aiharness.degenito.ai](https://aiharness.degenito.ai)
 
 ## License
 
