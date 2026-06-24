@@ -14,6 +14,6 @@ describe("envelope encryption", () => {
   it("fails to decrypt with the wrong KEK", async () => {
     const env = await encryptKey(KEK, "secret");
     const wrong = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))));
-    await expect(decryptKey(wrong, env)).rejects.toBeTruthy();
+    await expect(decryptKey(wrong, env)).rejects.toThrow();
   });
 });

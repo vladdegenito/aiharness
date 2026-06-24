@@ -9,7 +9,8 @@ function bytesToB64(bytes: Uint8Array): string {
 }
 
 async function importKek(kekB64: string): Promise<CryptoKey> {
-  return crypto.subtle.importKey("raw", b64ToBytes(kekB64), { name: "AES-GCM" }, false, ["wrapKey", "unwrapKey", "encrypt", "decrypt"]);
+  // KEK is only ever used to wrap/unwrap the per-job DEK — least privilege.
+  return crypto.subtle.importKey("raw", b64ToBytes(kekB64), { name: "AES-GCM" }, false, ["wrapKey", "unwrapKey"]);
 }
 
 // Envelope format: base64(dekIv) + "." + base64(wrappedDek) + "." + base64(dataIv) + "." + base64(ciphertext)
