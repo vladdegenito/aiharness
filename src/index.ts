@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 
+export { ScanRunner } from "./scan-runner/runner";
+
 export interface Env {
   DB: D1Database;
   SOURCE: R2Bucket;
