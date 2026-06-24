@@ -4,7 +4,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 def run_semgrep(files):
     with tempfile.TemporaryDirectory() as d:
         for f in files:
-            p = os.path.join(d, f["path"])
+            p = os.path.realpath(os.path.join(d, f["path"]))
+            root = os.path.realpath(d)
+            if not (p == root or p.startswith(root + os.sep)):
+                raise ValueError("path traversal attempt: %s" % f["path"])
             os.makedirs(os.path.dirname(p), exist_ok=True) if os.path.dirname(p) else None
             with open(p, "w") as fh:
                 fh.write(f["content"])
@@ -22,9 +25,9 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path != "/scan":
             self.send_response(404); self.end_headers(); return
-        length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length))
         try:
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length))
             result = run_semgrep(body.get("files", []))
             payload = json.dumps(result).encode()
             self.send_response(200)
