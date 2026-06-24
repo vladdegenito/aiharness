@@ -1,12 +1,17 @@
 {
   "name": "aiharness",
   "main": "src/index.ts",
+  "account_id": "bcb3076dfd78335925bd2ef25c9213d1",
   "compatibility_date": "2025-06-01",
   "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  // To serve at aiharness.degenito.ai, first add `degenito.ai` as a zone on THIS
+  // Cloudflare account (point its nameservers to Cloudflare), then re-add:
+  //   "routes": [{ "pattern": "aiharness.degenito.ai", "custom_domain": true }]
   "assets": { "directory": "./public", "binding": "ASSETS" },
   "observability": { "enabled": true },
   "d1_databases": [
-    { "binding": "DB", "database_name": "aiharness", "database_id": "PLACEHOLDER_SET_BY_WRANGLER", "migrations_dir": "migrations" }
+    { "binding": "DB", "database_name": "aiharness", "database_id": "618d3dbf-657c-466d-9ec0-0a5e9df35701", "migrations_dir": "migrations" }
   ],
   "r2_buckets": [
     { "binding": "SOURCE", "bucket_name": "aiharness-source" }
@@ -19,7 +24,7 @@
     "bindings": [{ "name": "SCAN_RUNNER", "class_name": "ScanRunner" }]
   },
   "containers": [
-    { "class_name": "ScanRunner", "image": "./container/Dockerfile", "max_instances": 5, "instance_type": "standard" }
+    { "class_name": "ScanRunner", "image": "./container/Dockerfile", "max_instances": 5, "instance_type": "standard-1" }
   ],
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["ScanRunner"] }
