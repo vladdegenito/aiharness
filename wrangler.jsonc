@@ -1,17 +1,17 @@
 {
   "name": "aiharness",
   "main": "src/index.ts",
-  "account_id": "bcb3076dfd78335925bd2ef25c9213d1",
+  "account_id": "79fa22cbad976a82e96b8bb969c3f204",
   "compatibility_date": "2025-06-01",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
-  // To serve at aiharness.degenito.ai, first add `degenito.ai` as a zone on THIS
-  // Cloudflare account (point its nameservers to Cloudflare), then re-add:
-  //   "routes": [{ "pattern": "aiharness.degenito.ai", "custom_domain": true }]
+  "routes": [
+    { "pattern": "aiharness.degenito.ai", "custom_domain": true }
+  ],
   "assets": { "directory": "./public", "binding": "ASSETS" },
   "observability": { "enabled": true },
   "d1_databases": [
-    { "binding": "DB", "database_name": "aiharness", "database_id": "618d3dbf-657c-466d-9ec0-0a5e9df35701", "migrations_dir": "migrations" }
+    { "binding": "DB", "database_name": "aiharness", "database_id": "19c8f283-db99-4d42-9f47-411601d9255f", "migrations_dir": "migrations" }
   ],
   "r2_buckets": [
     { "binding": "SOURCE", "bucket_name": "aiharness-source" }
