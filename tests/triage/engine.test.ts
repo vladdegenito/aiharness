@@ -22,4 +22,7 @@ describe("triageFindings", () => {
     expect(out!.explanation).toBe("ok");
     expect(out!.evidence).toContain("confirmed");
   });
+  it("returns an empty array for empty findings", async () => {
+    expect(await triageFindings([], fakeAdapter, (f) => f.snippet)).toEqual([]);
+  });
 });

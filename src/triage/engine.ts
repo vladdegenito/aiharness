@@ -10,6 +10,8 @@ export async function triageFindings(
   const out: Finding[] = [];
   for (const f of findings) {
     const triage = await adapter.analyze({ finding: f, codeWindow: getWindow(f), cwe: f.cwe });
+    // All Semgrep findings are tool-originated (deterministic = true).
+    // Set false only for model-generated findings with no static-analysis backing.
     const { confidence, evidence } = computeConfidence({ deterministic: true, verdict: triage.verdict });
     out.push({
       ...f,

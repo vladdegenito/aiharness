@@ -15,4 +15,9 @@ describe("computeConfidence", () => {
     expect(r.confidence).toBe("low");
     expect(r.evidence).toContain("refuted");
   });
+  it("low when model-only (no deterministic basis)", () => {
+    const r = computeConfidence({ deterministic: false, verdict: "confirmed" });
+    expect(r.confidence).toBe("low");
+    expect(r.evidence).toContain("Model-originated");
+  });
 });
