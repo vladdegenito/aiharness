@@ -19,9 +19,11 @@ export class ClaudeAdapter implements ModelAdapter {
       (async (system, user) => {
         const client = new Anthropic({ apiKey });
         const msg = await client.messages.create({
+          // Note: claude-opus-4-8 deprecates `temperature`; omit it (the model is
+          // low-variance by default). Determinism is anchored via the pinned model
+          // id + recorded prompt hash in the audit log rather than temperature=0.
           model: CLAUDE_MODEL,
           max_tokens: 1024,
-          temperature: 0,
           system,
           messages: [{ role: "user", content: user }],
         });
