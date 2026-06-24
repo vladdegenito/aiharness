@@ -7,7 +7,7 @@ export default defineWorkersConfig(async () => {
     test: {
       poolOptions: {
         workers: {
-          wrangler: { configPath: "./wrangler.jsonc" },
+          wrangler: { configPath: "./wrangler.test.jsonc" },
           miniflare: { bindings: { TEST_MIGRATIONS: migrations } },
           // WORKAROUND: isolatedStorage and multi-worker mode trigger a miniflare
           // sqlite-shm frame-pop assertion when R2 is accessed inside

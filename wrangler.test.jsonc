@@ -18,9 +18,6 @@
   "durable_objects": {
     "bindings": [{ "name": "SCAN_RUNNER", "class_name": "ScanRunner" }]
   },
-  "containers": [
-    { "class_name": "ScanRunner", "image": "./container/Dockerfile", "max_instances": 5, "instance_type": "standard" }
-  ],
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["ScanRunner"] }
   ]

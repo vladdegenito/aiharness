@@ -5,33 +5,51 @@ import type { ModelAdapter } from "../adapters/model-adapter";
 import { ClaudeAdapter } from "../adapters/claude";
 import { normalizeSemgrep } from "./semgrep-normalize";
 
-// NOTE (minimal adjustment, per task brief): ScanRunner extends DurableObject rather
-// than @cloudflare/containers Container because the Container constructor throws
-// "Container is not enabled" when ctx.container is undefined — which is always
-// the case under vitest-pool-workers.  In production (real workerd with containers
-// enabled) this class should extend Container<Env> and remove the stub containerFetch.
-// All public surface area is identical for tests: scanFn is overridable, scanToFindings
-// normalizes output, runScan is the Task-12 placeholder.
+// ScanRunner intentionally uses the low-level `this.ctx.container` API (not the
+// @cloudflare/containers Container base class) so the same class works under vitest
+// (where `ctx.container` is undefined and tests override `scanFn`) and in production
+// (where `ctx.container` is a real container runtime). The constructor boots the
+// container when present; `scanFn` retries until the container is ready.
 
 export class ScanRunner extends DurableObject<Env> {
   defaultPort = 8080;
   sleepAfter = "2m";
 
-  // Production implementation calls the Semgrep container.
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+    const container = (this.ctx as any).container;
+    if (container) {
+      this.ctx.blockConcurrencyWhile(async () => { container.start(); });
+    }
+  }
+
+  // Production implementation calls the Semgrep container via the low-level port API.
   // Tests override this property before calling scanToFindings.
   scanFn = async (
     files: { path: string; content: string }[],
     language: string,
   ): Promise<unknown> => {
-    // Calls the container's /scan endpoint (production path).
-    const res = await this.containerFetch(
-      new Request("http://container/scan", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ language, files }),
-      }),
-    );
-    return res.json();
+    const container = (this.ctx as any).container;
+    if (!container) throw new Error("container runtime unavailable");
+    if (!container.running) container.start();
+    const port = container.getTcpPort(8080);
+    const init = {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ language, files }),
+    };
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < 30; attempt++) {
+      try {
+        const res = await port.fetch("http://container/scan", init);
+        if (res.ok) return await res.json();
+        lastErr = new Error("container responded " + res.status);
+      } catch (e) {
+        lastErr = e;  // container not ready yet
+      }
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    throw lastErr ?? new Error("container scan failed to become ready");
   };
 
   // overridable in tests — model adapter factory
@@ -101,10 +119,5 @@ export class ScanRunner extends DurableObject<Env> {
       await setScanStatus(env.DB, scanId, succeeded ? "completed" : "failed");
       await env.SOURCE.delete(`source/${scanId}.json`).catch(() => {});  // TTL: drop source
     }
-  }
-
-  // Stub: replaced by Container.containerFetch in production.
-  protected containerFetch(_req: Request): Promise<Response> {
-    throw new Error("containerFetch not available (no container runtime in test env)");
   }
 }
