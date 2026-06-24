@@ -13,7 +13,7 @@
   ],
   "queues": {
     "producers": [{ "binding": "SCAN_QUEUE", "queue": "aiharness-scans" }],
-    "consumers": [{ "queue": "aiharness-scans", "max_batch_size": 1, "max_retries": 3 }]
+    "consumers": [{ "queue": "aiharness-scans", "max_batch_size": 1, "max_retries": 0 }]
   },
   "durable_objects": {
     "bindings": [{ "name": "SCAN_RUNNER", "class_name": "ScanRunner" }]

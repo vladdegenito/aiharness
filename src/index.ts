@@ -24,8 +24,10 @@ export default {
   async queue(batch: MessageBatch<{ scanId: string }>, env: Env): Promise<void> {
     for (const msg of batch.messages) {
       const stub = env.SCAN_RUNNER.get(env.SCAN_RUNNER.idFromName(msg.body.scanId));
-      // Fix 4: always ack so a poison message does not retry forever;
-      // runScan itself records "failed" status in the finally block.
+      // Retries are disabled (max_retries: 0) because the BYO API key is
+      // shredded in runScan's finally block after the first attempt, making
+      // a retry impossible.  Always ack so a poison message is not re-queued.
+      // runScan records terminal "failed" status itself.
       try {
         await stub.runScan(msg.body.scanId);
       } catch (err) {

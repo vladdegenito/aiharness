@@ -18,7 +18,12 @@
   ],
   "queues": {
     "producers": [{ "binding": "SCAN_QUEUE", "queue": "aiharness-scans" }],
-    "consumers": [{ "queue": "aiharness-scans", "max_batch_size": 1, "max_retries": 3 }]
+    // max_retries: 0 — fail-fast by design.  The BYO API key is shredded
+    // in runScan's finally block after the first attempt, so a retry could
+    // not re-run the scan anyway.  runScan records terminal "failed" status
+    // itself, so no retry logic is needed here.  Re-enabling retries would
+    // require persisting the key across attempts (a future enhancement).
+    "consumers": [{ "queue": "aiharness-scans", "max_batch_size": 1, "max_retries": 0 }]
   },
   "durable_objects": {
     "bindings": [{ "name": "SCAN_RUNNER", "class_name": "ScanRunner" }]
